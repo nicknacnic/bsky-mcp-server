@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { AtpAgent } from "@atproto/api";
+import { AtpAgent, RichText } from "@atproto/api";
 import * as dotenv from "dotenv";
 import {  
   cleanHandle,
@@ -222,8 +222,13 @@ server.tool(
     }
 
     try {
+      // Detect facets so #hashtags, @mentions, and URLs render as
+      // clickable rich text rather than plain text.
+      const rt = new RichText({ text });
+      await rt.detectFacets(agent);
       const record: any = {
-        text,
+        text: rt.text,
+        facets: rt.facets,
         createdAt: new Date().toISOString(),
       };
 
