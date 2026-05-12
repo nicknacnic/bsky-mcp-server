@@ -249,11 +249,23 @@ server.tool(
           
           const threadPost = cidResponse.data.thread as any;
           const parentCid = threadPost.post.cid;
-          
+          const parentRecord = threadPost.post.record as any;
+
+          // Thread-root resolution: if the parent is itself a reply, the new
+          // post must inherit the parent's `reply.root` so the whole conversation
+          // stays under a single tree.  Only when the parent has no `reply` field
+          // (i.e. it IS the thread root) do we use the parent itself as root.
+          // Without this, every reply past depth 2 silently re-roots and the
+          // Bluesky AppView fragments the thread into separate trees.
+          const inheritedRoot = parentRecord?.reply?.root;
+          const root = inheritedRoot
+            ? { uri: inheritedRoot.uri, cid: inheritedRoot.cid }
+            : { uri: replyTo, cid: parentCid };
+
           // Add reply information to the record
           record.reply = {
             parent: { uri: replyTo, cid: parentCid },
-            root: { uri: replyTo, cid: parentCid }
+            root,
           };
 
         } catch (error) {
